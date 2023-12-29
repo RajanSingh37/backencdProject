@@ -1,4 +1,6 @@
 import { Schema, model } from "mongoose";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const userSchema = new Schema({
     fullName: {
@@ -7,7 +9,7 @@ const userSchema = new Schema({
         minLength: [3, 'Name must be at least 3 character'],
         maxLength: [50, 'Name should be less than 50 caharcter'],
         lowercase: true,
-        trim: true,
+        trim: true, // Removes unnecessary spaces
     },
     email: {
         type: 'String',
@@ -17,14 +19,14 @@ const userSchema = new Schema({
         unique: true,
         // regex for email validation
         match: [
-            /^[a-zA-Z0-9. _-]+@[a-zA-Z0-9. -]+\. [a-zA-Z]{2,4}$/, 'Please fill a valid email address',
-        ]
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/, 'Please fill a valid email address',
+        ], // Matches email aginst regex
     },
     password: {
         type: 'String',
         required: [true, 'Password is required'],
         minLength: [8, 'Password must be atleast 8 character'],
-        selecet: false // don't show password by default
+        selecet: false // don't show to select password by default
     },
     avatar: {
         public_id: {
@@ -44,6 +46,28 @@ const userSchema = new Schema({
 },{
     timestamps: true
 });
+
+userSchema.pre('save', async function() {
+    if(!this.isModified('password')) {
+        return next();
+    }
+    this.password = await bcrypt.hash(this.password, 10);
+});
+
+userSchema.methods = {
+    generateJWTToken: async function () {
+        return await jwt.sign(
+          { id: this._id, role: this.role, subscription: this.subscription },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: process.env.JWT_EXPIRY,
+          }
+        )
+    },
+    comparePassword: async function(plainTextPassword) {
+        return bcrypt.compare(plainTextPassword, this.password)
+    }
+}
 
 const User = model('User', userSchema);
 
