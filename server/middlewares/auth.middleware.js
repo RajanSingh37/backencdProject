@@ -1,7 +1,7 @@
 import AppError from "../utils/error.util.js";
 import jwt from 'jsonwebtoken';
 
-const isLoggedin = async (req, res, next) => {
+const isLoggedIn = async (req, res, next) => {
     const { token } = req.cookies;
 
     if (!token) {
@@ -16,5 +16,5 @@ const isLoggedin = async (req, res, next) => {
 }
 
 export {
-    isLoggedin
+    isLoggedIn
 }
